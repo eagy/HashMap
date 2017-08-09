@@ -1,62 +1,112 @@
 import java.util.LinkedList;
 import java.util.Queue;
 
+
+
 /**
  * @author Daniel Eagy
  * @version 1.0
  *
  */
 public class LinearProbingMap<Key, Value> implements Map<Key, Value> {
-    private class Entry {
-        public Key key;
-        public Value value;
-        public Entry (Key k, Value v) {
-            key = k;
-            value = v;
-        }
-    }
+
     
     private int N; // number of key-value pairs
     private int M; // hash table size
     
-    private LinkedList<Entry>[] entries;
-    
+    private Key[] key;
+    private Value[] value;
     public LinearProbingMap() {
         this(997);
     }
     
-    public LinearProbingMap(int M) {
+    @SuppressWarnings("unchecked")
+	public LinearProbingMap(int M) {
         this.N = 0;
         this.M = M;
-        entries = new LinkedList[M];
-        for (int i = 0; i < M; i++)
-            entries[i] = new LinkedList<>();
+        //entries = (Entry[]) new Object[M];
+        key = (Key[]) new Object[M];
+        value = (Value[]) new Object[M];
     }
     
 	@Override
 	public void put(Key key, Value val) {
-		// TODO Auto-generated method stub
 		
+       boolean added = false;
+        
+       int i = 0;
+        for(i = (hash(key, i)); this.key[i] != null; i++)
+            if(key.hashCode() == this.key[i].hashCode()) {
+                this.value[i] = val;
+                added = true;
+            }
+       
+        if(!added) {
+			i = numCollision(key);
+			this.key[hash(key, i)] = key;
+			this.value[hash(key, i)] = val;
+			N++;
+        }
 	}
 	
 	private int hash(Key key) {
-		// TODO
-		return 0;
+		return (key.hashCode() & 0x7fffffff) % M;
 	}
 	
-	private boolean collision() {
-		// TODO
-		return false; 
+	private int numCollision(Key key) {
+		int i = 0;
+		
+		while (this.key[hash(key, i)] != null) {
+			i++;
+		}
+		
+		return i; 
 	}
+	
+	private int hash(Key key, int i) {
+		return (hash(key)+i) % M;
+	}
+	
 	@Override
 	public Value get(Key key) {
-		// TODO Auto-generated method stub
-		return null;
+		int i = 0;
+		for (i = hash(key, i); this.key[i] != null; i++) {
+			if(key.hashCode() == this.key[i].hashCode())
+				return this.value[i];
+		}
+
+        return null;
 	}
 
 	@Override
 	public void remove(Key key) {
 		// TODO Auto-generated method stub
+		if(contains(key)) {
+			int i = hash(key);
+			
+			
+			while(!(key.hashCode() ==this.key[i].hashCode())){
+				i++;
+			}
+			
+			this.key[i] = null;
+			this.value[i] = null;
+			i++;
+			
+			while (this.key[i] != null) {
+			    // delete keys[i] an vals[i] and reinsert
+				Key keyRehash = this.key[i];
+				Value valueRehash = this.value[i];
+				this.key[i] = null;
+				this.value[i] = null;
+				N--;
+				put(keyRehash, valueRehash);
+				i++;
+			}
+			
+			N--;
+		}
+		
 		
 	}
 
@@ -77,8 +127,15 @@ public class LinearProbingMap<Key, Value> implements Map<Key, Value> {
 
 	@Override
 	public Iterable<Key> keys() {
-		// TODO Auto-generated method stub
-		return null;
+        Queue<Key> queue = new LinkedList<>();
+        
+		
+		for (int i = 0; i < M; i++) {
+			if(key[i] != null)
+				queue.add(key[i]);
+		}
+
+        return queue;
 	}
 
 }
